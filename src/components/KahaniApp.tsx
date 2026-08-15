@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import posthog from "posthog-js";
 import { AnimatePresence, motion } from "framer-motion";
 import { MAX_BEATS, resolveTheme } from "@/lib/story/themes";
 import type {
@@ -331,6 +332,12 @@ export default function KahaniApp() {
           ambience().duck(false);
           if (nextBeat.isEnding) {
             appendTurn({ beat: nextBeat });
+            posthog.capture("story_completed", {
+              beats: turnsRef.current.length,
+              theme: setupRef.current?.themeId,
+              language: setupRef.current?.language,
+              mode: setupRef.current?.mode,
+            });
             setPhase("ending");
           } else if (!nextBeat.choice) {
             appendTurn({ beat: nextBeat });
@@ -343,9 +350,15 @@ export default function KahaniApp() {
       .catch(() => undefined);
   };
 
-  const finalizeAnswer = (reply: string) => {
+  const finalizeAnswer = (reply: string, via: "mic" | "chip") => {
     const current = beatRef.current;
     if (!current) return;
+    posthog.capture("answer_given", {
+      via,
+      beat_number: turnsRef.current.length + 1,
+      language: setupRef.current?.language,
+      mode: setupRef.current?.mode,
+    });
     answerGenRef.current++;
     stopRecording();
     player().stop();
@@ -386,7 +399,7 @@ export default function KahaniApp() {
       setTranscriptPreview(transcript);
       window.setTimeout(() => {
         if (gen === genRef.current && answerGen === answerGenRef.current) {
-          finalizeAnswer(transcript);
+          finalizeAnswer(transcript, "mic");
         }
       }, CONFIRM_LINGER_MS);
     } catch {
@@ -412,7 +425,7 @@ export default function KahaniApp() {
 
   const handleChip = (text: string) => {
     if (sttProcessing || transcriptPreview) return;
-    finalizeAnswer(text);
+    finalizeAnswer(text, "chip");
   };
 
   const handleStart = (info: SetupInfo) => {
@@ -424,6 +437,11 @@ export default function KahaniApp() {
     prefetchRef.current = null;
     lineImagesRef.current = null;
     outlineRef.current = undefined;
+    posthog.capture("story_started", {
+      theme: info.themeId,
+      language: info.language,
+      mode: info.mode,
+    });
     setIllustration(null);
     setSetup(info);
     setTurns([]);
@@ -475,6 +493,11 @@ export default function KahaniApp() {
   const handleReport = () => {
     const info = setupRef.current;
     if (!info) return;
+    posthog.capture("report_viewed", {
+      language: info.language,
+      mode: info.mode,
+      cached: !!reportData,
+    });
     // Cached from a previous open — instant.
     if (reportData) {
       setReportOpen(true);
