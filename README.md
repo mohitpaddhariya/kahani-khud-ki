@@ -3,6 +3,8 @@
 **The story whose hero is YOU.** An interactive, multi-voice AI audio drama for children in
 Indian languages — powered end-to-end by [Sarvam AI](https://www.sarvam.ai).
 
+**Live:** <https://mohit-paddhariya--kahani-khud-ki-web.us-east.modal.direct> (hosted on [Modal](https://modal.com))
+
 A child gives their name, picks a world, and the show begins: an AI director writes the story
 beat-by-beat, every character speaks with a *distinct* Bulbul voice, **every chapter paints
 itself** — a live storybook illustration generated per beat — and at the end of each beat a
@@ -93,6 +95,19 @@ npm run dev
 Requires a [Sarvam API key](https://dashboard.sarvam.ai) (₹100 free credits on signup)
 and a [Gemini API key](https://aistudio.google.com) for illustrations (the show runs
 without it — beats just keep the mood-gradient backdrop).
+
+## Deploy (Modal)
+
+The whole app — UI and API routes — runs as one [Modal Server](https://modal.com/docs/guide/servers)
+(`modal_app.py`): a Node 22 image builds the Next.js app at deploy time and serves it
+with `next start`; one container stays warm so the link never cold-starts.
+
+```bash
+uv tool install modal            # or: pipx install modal
+modal setup                      # one-time auth
+modal secret create kahani-secrets SARVAM_API_KEY=... GEMINI_API_KEY=...
+modal deploy modal_app.py
+```
 
 ## Demo script (2 minutes)
 
